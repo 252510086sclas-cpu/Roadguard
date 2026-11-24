@@ -1,1 +1,123 @@
-index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoadGuard - Road Damage Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header>
+    <h2>🛣️ RoadGuard</h2>
+    <p>AI-Based Road Damage Detection System</p>
+</header>
+
+<main>
+    <section class="hero">
+        <h1>Smart Road Damage Detection</h1>
+        <p>Upload a road image and detect potholes, cracks and road damage using Artificial Intelligence.</p>
+    </section>
+
+    <section class="upload-section">
+        <h2>Upload Road Image</h2>
+
+        <input type="file" id="imageInput" accept="image/*">
+
+        <br><br>
+
+        <img id="preview" style="max-width:100%;max-height:250px;display:none;" alt="Preview">
+
+        <br><br>
+
+        <button id="detectButton" onclick="detectDamage()">Detect Road Damage</button>
+
+        <p id="status"></p>
+    </section>
+
+    <section class="result-section">
+        <h2>Detection Results</h2>
+
+        <img id="resultImage" style="max-width:100%;max-height:350px;display:none;" alt="Detection result">
+
+        <h3 id="resultCount"></h3>
+
+        <div id="detectionList"></div>
+    </section>
+</main>
+
+<footer>
+    <p>RoadGuard | AI Road Damage Detection Project</p>
+</footer>
+
+<script>
+const input = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+
+input.addEventListener("change", function() {
+    const file = this.files[0];
+
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = "block";
+    }
+});
+
+async function detectDamage() {
+    const file = input.files[0];
+
+    if (!file) {
+        alert("Please select a road image first.");
+        return;
+    }
+
+    const button = document.getElementById("detectButton");
+    const status = document.getElementById("status");
+
+    button.disabled = true;
+    status.textContent = "Analyzing road image...";
+
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+        const response = await fetch("/api/detect", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Detection failed.");
+        }
+
+        document.getElementById("resultImage").src = data.result_url;
+        document.getElementById("resultImage").style.display = "block";
+
+        document.getElementById("resultCount").textContent =
+            "Total damages detected: " + data.count;
+
+        const list = document.getElementById("detectionList");
+        list.innerHTML = "";
+
+        data.detections.forEach(item => {
+            const p = document.createElement("p");
+            p.textContent = item.label + " - " + item.confidence + "% confidence";
+            list.appendChild(p);
+        });
+
+        status.textContent = "Detection completed successfully!";
+
+    } catch (error) {
+        status.textContent = error.message;
+    } finally {
+        button.disabled = false;
+    }
+}
+</script>
+
+</body>
+</html>
+
